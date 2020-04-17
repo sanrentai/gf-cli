@@ -32,7 +32,7 @@ func Run() {
 		"arch": runtime.GOARCH,
 	})
 	if latestMd5 == "" {
-		mlog.Fatal("get the latest binary md5 failed")
+		mlog.Fatal("get the latest binary md5 failed, may be network issue")
 	}
 	localMd5, err := gmd5.EncryptFile(gfile.SelfPath())
 	if err != nil {
@@ -52,18 +52,41 @@ func Run() {
 			ext,
 			latestMd5,
 		)
-		data := ghttp.GetBytes(downloadUrl)
-		if len(data) == 0 {
-			mlog.Fatal("downloading failed for", runtime.GOOS, runtime.GOARCH)
+		mlog.Debugf("HTTP GET %s", downloadUrl)
+		res, err := ghttp.Get(downloadUrl)
+		if err != nil || res.StatusCode != 200 {
+			mlog.Fatalf(
+				"downloading failed for %s %s, may be network issue:\n%s",
+				runtime.GOOS, runtime.GOARCH, res.ReadAllString(),
+			)
 		}
+		defer res.Close()
+		data := res.ReadAll()
 		mlog.Print("installing...")
-		// Rename myself for windows.
+		var (
+			binPath    = gfile.SelfPath()
+			binDirPath = gfile.SelfDir()
+			renamePath = binPath + "~"
+		)
 		if runtime.GOOS == "windows" {
-			gfile.Rename(gfile.SelfPath(), gfile.SelfPath()+"~")
+			// Rename myself for windows.
+			if err := gfile.Rename(binPath, renamePath); err != nil {
+				mlog.Fatal("rename binary file failed:", err.Error())
+			}
+			defer gfile.Remove(renamePath)
+		} else {
+			// Remove the binary for other platforms.
+			if gfile.IsWritable(binDirPath) {
+				if err := gfile.Remove(binPath); err != nil {
+					mlog.Fatal("remove binary failed:", err.Error())
+				}
+			}
 		}
-		// Updates the binary content.
-		if err := gfile.PutBytes(gfile.SelfPath(), data); err != nil {
-			mlog.Fatal("installing binary failed,", err.Error())
+		if err := gfile.PutBytes(binPath, data); err != nil {
+			mlog.Fatal("install binary failed:", err.Error())
+		}
+		if err := gfile.Chmod(binPath, 0777); err != nil {
+			mlog.Fatal("chmod binary failed:", err.Error())
 		}
 		mlog.Print("gf binary is now updated to the latest version")
 	} else {

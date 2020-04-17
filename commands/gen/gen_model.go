@@ -52,7 +52,7 @@ func doGenModel(parser *gcmd.Parser) {
 			mlog.Fatalf("set configuration path '%s' failed: %v", gfile.TempDir(), err)
 		}
 	}
-
+	// Custom configuration file.
 	if configFile != "" {
 		path, err := gfile.Search(configFile)
 		if err != nil {
@@ -61,9 +61,7 @@ func doGenModel(parser *gcmd.Parser) {
 		if err := g.Cfg().SetPath(gfile.Dir(path)); err != nil {
 			mlog.Fatalf("set configuration path '%s' failed: %v", path, err)
 		}
-		if err := g.Cfg().SetFileName(gfile.Basename(path)); err != nil {
-			mlog.Fatalf("set configuration file name '%s' failed: %v", gfile.Basename(path), err)
-		}
+		g.Cfg().SetFileName(gfile.Basename(path))
 	}
 
 	db := g.DB(configGroup)
@@ -173,6 +171,8 @@ import (
 		"{TplPackageName}":    packageName,
 		"{TplPackageImports}": packageImports,
 		"{TplStructDefine}":   structDefine,
+		"{TplColumnDefine}":   gstr.Trim(generateColumnDefinition(fieldMap)),
+		"{TplColumnNames}":    gstr.Trim(generateColumnNames(fieldMap)),
 	})
 	if err := gfile.PutContents(path, strings.TrimSpace(modelContent)); err != nil {
 		mlog.Fatalf("writing content to '%s' failed: %v", path, err)
@@ -196,7 +196,7 @@ func generateStructDefinition(fieldMap map[string]*gdb.TableField) string {
 	tw.AppendBulk(array)
 	tw.Render()
 	stContent := buffer.String()
-	// Let's do this hack of tablewriter for indent!
+	// Let's do this hack of table writer for indent!
 	stContent = gstr.Replace(stContent, "  #", "")
 	buffer.Reset()
 	buffer.WriteString("type Entity struct {\n")
@@ -277,4 +277,60 @@ func generateStructField(field *gdb.TableField) []string {
 		" #" + fmt.Sprintf(`json:"%s"`+"`", jsonTag),
 		" #" + fmt.Sprintf(`// %s`, comment),
 	}
+}
+
+// generateColumnDefinition generates and returns the column names definition for specified table.
+func generateColumnDefinition(fieldMap map[string]*gdb.TableField) string {
+	buffer := bytes.NewBuffer(nil)
+	array := make([][]string, len(fieldMap))
+	for _, field := range fieldMap {
+		comment := gstr.Trim(gstr.ReplaceByArray(field.Comment, g.SliceStr{
+			"\n", " ",
+			"\r", " ",
+		}))
+		array[field.Index] = []string{
+			"        #" + gstr.CamelCase(field.Name),
+			" # " + "string",
+			" #" + fmt.Sprintf(`// %s`, comment),
+		}
+	}
+	tw := tablewriter.NewWriter(buffer)
+	tw.SetBorder(false)
+	tw.SetRowLine(false)
+	tw.SetAutoWrapText(false)
+	tw.SetColumnSeparator("")
+	tw.AppendBulk(array)
+	tw.Render()
+	defineContent := buffer.String()
+	// Let's do this hack of table writer for indent!
+	defineContent = gstr.Replace(defineContent, "  #", "")
+	buffer.Reset()
+	buffer.WriteString(defineContent)
+	return buffer.String()
+}
+
+// generateColumnNames generates and returns the column names assignment content of column struct
+// for specified table.
+func generateColumnNames(fieldMap map[string]*gdb.TableField) string {
+	buffer := bytes.NewBuffer(nil)
+	array := make([][]string, len(fieldMap))
+	for _, field := range fieldMap {
+		array[field.Index] = []string{
+			"        #" + gstr.CamelCase(field.Name) + ":",
+			fmt.Sprintf(` #"%s",`, field.Name),
+		}
+	}
+	tw := tablewriter.NewWriter(buffer)
+	tw.SetBorder(false)
+	tw.SetRowLine(false)
+	tw.SetAutoWrapText(false)
+	tw.SetColumnSeparator("")
+	tw.AppendBulk(array)
+	tw.Render()
+	namesContent := buffer.String()
+	// Let's do this hack of table writer for indent!
+	namesContent = gstr.Replace(namesContent, "  #", "")
+	buffer.Reset()
+	buffer.WriteString(namesContent)
+	return buffer.String()
 }

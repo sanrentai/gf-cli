@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"github.com/gogf/gf-cli/library/mlog"
 	"github.com/gogf/gf/container/gmap"
 	"github.com/gogf/gf/frame/g"
 	"github.com/gogf/gf/net/ghttp"
@@ -16,7 +17,7 @@ var (
 )
 
 func init() {
-	httpClient.SetTimeOut(time.Second)
+	httpClient.SetTimeout(time.Second)
 }
 
 // AutoSet automatically checks and sets the golang proxy.
@@ -28,8 +29,10 @@ func AutoSet() {
 // SetGoModuleEnabled enables/disables the go module feature.
 func SetGoModuleEnabled(enabled bool) {
 	if enabled {
+		mlog.Debug("set GO111MODULE=on")
 		genv.Set("GO111MODULE", "on")
 	} else {
+		mlog.Debug("set GO111MODULE=off")
 		genv.Set("GO111MODULE", "off")
 	}
 }
