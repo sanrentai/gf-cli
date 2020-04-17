@@ -37,7 +37,7 @@ var (
 )
 
 func init() {
-	httpClient.SetTimeOut(gPROXY_CHECK_TIMEOUT)
+	httpClient.SetTimeout(gPROXY_CHECK_TIMEOUT)
 }
 
 func Help() {
@@ -109,7 +109,8 @@ func Run() {
 			return true
 		})
 		if index != -1 {
-			if gstr.Contains(array.Get(index), "=") {
+			v, _ := array.Get(index)
+			if gstr.Contains(v, "=") {
 				array.Remove(index)
 			} else {
 				array.Remove(index)
@@ -139,9 +140,9 @@ func Run() {
 		}
 		// With some delay in case of multiple code changes in very short interval.
 		gtimer.SetTimeout(1500*gtime.MS, func() {
+			defer dirty.Set(false)
 			mlog.Printf(`go file changes: %s`, event.String())
 			app.Run()
-			dirty.Set(false)
 		})
 	})
 	if err != nil {
@@ -189,13 +190,20 @@ func (app *App) Run() {
 	// Kill the old process if build successfully.
 	if process != nil {
 		if err := process.Kill(); err != nil {
-			mlog.Printf("kill process error: %s", err.Error())
-			return
+			mlog.Debugf("kill process error: %s", err.Error())
+			//return
 		}
 	}
+	// Run the binary file.
 	command = fmt.Sprintf(`%s %s`, outputPath, app.Args)
 	mlog.Print(command)
-	process = gproc.NewProcessCmd(command, nil)
+	if runtime.GOOS == "windows" {
+		// Special handling for windows platform.
+		// DO NOT USE "cmd /c" command.
+		process = gproc.NewProcess(command, nil)
+	} else {
+		process = gproc.NewProcessCmd(command, nil)
+	}
 	if pid, err := process.Start(); err != nil {
 		mlog.Printf("build running error: %s", err.Error())
 	} else {
