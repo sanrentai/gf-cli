@@ -3,6 +3,7 @@ package gen
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/gogf/gf-cli/library/allyes"
@@ -16,9 +17,7 @@ import (
 	_ "github.com/lib/pq"
 
 	//_ "github.com/mattn/go-oci8"
-	"strings"
-
-	_ "github.com/mattn/go-sqlite3"
+	//_ "github.com/mattn/go-sqlite3"
 	"github.com/olekukonko/tablewriter"
 )
 

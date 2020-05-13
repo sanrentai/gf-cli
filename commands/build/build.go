@@ -72,7 +72,7 @@ OPTION
     -s, --system     output binary system, multiple os separated with ','
     -o, --output     output binary path, used when building single binary file
     -p, --path       output binary directory path, default is './bin'
-	-e, --extra      extra custom "go build" options
+    -e, --extra      extra custom "go build" options
     -m, --mod        like "-mod" option of "go build", use "-m none" to disable go module
     --swagger        auto parse and pack swagger into boot/data-swagger.go before building. 
     --pack           auto pack config,public,template folder into boot/data-packed.go before building.
@@ -95,29 +95,12 @@ DESCRIPTION
     3. Build-In Variables.
 
 PLATFORMS
-    darwin    386
-    darwin    amd64
-    freebsd   386
-    freebsd   amd64
-    freebsd   arm
-    linux     386
-    linux     amd64
-    linux     arm
-    linux     arm64
-    linux     ppc64
-    linux     ppc64le
-    linux     mips
-    linux     mipsle
-    linux     mips64
-    linux     mips64le
-    netbsd    386
-    netbsd    amd64
-    netbsd    arm
-    openbsd   386
-    openbsd   amd64
-    openbsd   arm
-    windows   386
-    windows   amd64
+    darwin    386,amd64
+    freebsd   386,amd64,arm
+    linux     386,amd64,arm,arm64,ppc64,ppc64le,mips,mipsle,mips64,mips64le
+    netbsd    386,amd64,arm
+    openbsd   386,amd64,arm
+    windows   386,amd64
 `))
 }
 
@@ -140,7 +123,12 @@ func Run() {
 	}
 	file := parser.GetArg(2)
 	if len(file) < 1 {
-		mlog.Fatal("build file path cannot be empty")
+		// Check and use the main.go file.
+		if gfile.Exists("main.go") {
+			file = "main.go"
+		} else {
+			mlog.Fatal("build file path cannot be empty")
+		}
 	}
 	path := getOption(parser, "path", "./bin")
 	name := getOption(parser, "name", gfile.Name(file))
@@ -185,7 +173,7 @@ func Run() {
 		}
 	}
 
-	// Auto packing
+	// Auto packing.
 	if containsOption(parser, "pack") {
 		packFolderStr := ""
 		if gfile.Exists("config") {
@@ -205,7 +193,7 @@ func Run() {
 		}
 	}
 
-	// injected information.
+	// Injected information.
 	ldFlags := fmt.Sprintf(`-X 'github.com/gogf/gf/os/gbuild.builtInVarStr=%v'`, getBuildInVarStr())
 
 	// start building

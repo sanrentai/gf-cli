@@ -1,9 +1,10 @@
 # GF-CLI
 
-`gf-cli` is a powerful CLI tool for building [GF](https://goframe.org) application more convenience.
+`gf-cli` is a powerful CLI tool for building [GF](https://goframe.org) application with convenience.
 
 ## 1. Install
 
+### 1). Binary
 It's recommended using pre-compiled binaries:
 - `Linux   (amd64)`: https://goframe.org/cli/linux_amd64/gf
 - `Mac     (amd64)`: https://goframe.org/cli/darwin_amd64/gf
@@ -12,18 +13,30 @@ It's recommended using pre-compiled binaries:
 
 After downloads, please use `gf install` command to install gf binary to system binary path.
 
-1. `Linux`
+1. `Linux` & `Mac`
     ```shell
-    wget https://goframe.org/cli/linux_amd64/gf && chmod +x gf && sudo ./gf install
-    ```
-1. `Mac`
-    ```shell
-    wget https://goframe.org/cli/darwin_amd64/gf && chmod +x gf && ./gf install
+    wget https://goframe.org/cli/linux_amd64/gf && chmod +x gf && ./gf install
     ```
    > If you're using `zsh`, you might need rename your alias by command `alias gf=gf` to resolve the conflicts between `gf` and `git fetch`.
 1. `Windows`
 
     Manually download, double click it and then follow the instruction.
+
+### 2). Manually Install
+
+> You might need setting the goproxy to make through building.
+
+1. Latest version
+    ```
+    git clone https://github.com/gogf/gf-cli 
+    cd gf-cli && go build main.go && ./main install
+    ```
+1. Specified version
+    ```
+    git clone --branch v0.7.3 https://github.com/gogf/gf-cli 
+    cd gf-cli && go build main.go && ./main install
+    ```
+1. Database `sqlite` and `oracle` are not support in `gf gen model` command in default as it needs `cgo` and `gcc`, you can manually make some changes to the source codes and do the building.
 
 ## 2. Commands
 ```html
